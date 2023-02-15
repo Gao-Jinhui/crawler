@@ -7,6 +7,14 @@ type Request struct {
 }
 
 type ParseResult struct {
-	Requesrts []*Request
-	Items     []interface{}
+	Requests []*Request
+	Items    []interface{}
+}
+
+func NewCollectRequest(url, cookie string, parseFunc func([]byte, *Request) ParseResult) *Request {
+	return &Request{
+		Url:       url,
+		Cookie:    cookie,
+		ParseFunc: parseFunc,
+	}
 }
