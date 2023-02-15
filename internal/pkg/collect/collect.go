@@ -5,6 +5,7 @@ import (
 	"crawler/pkg/format"
 	"crawler/pkg/proxy"
 	"fmt"
+	"go.uber.org/zap"
 	"golang.org/x/text/transform"
 	"io/ioutil"
 	"net/http"
@@ -18,9 +19,18 @@ type Fetcher interface {
 type BrowserFetch struct {
 	Timeout time.Duration
 	Proxy   proxy.ProxyFunc
+	Logger  *zap.Logger
 }
 
-// 模拟浏览器访问
+func NewBrowserFetch(logger *zap.Logger, proxy proxy.ProxyFunc) *BrowserFetch {
+	return &BrowserFetch{
+		Timeout: 3000 * time.Millisecond,
+		Proxy:   proxy,
+		Logger:  logger,
+	}
+}
+
+// Get 模拟浏览器访问
 func (b *BrowserFetch) Get(request *Request) ([]byte, error) {
 
 	client := &http.Client{
