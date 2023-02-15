@@ -3,13 +3,10 @@ package collect
 import (
 	"bufio"
 	"crawler/pkg/format"
-	"crawler/pkg/proxy"
 	"fmt"
-	"go.uber.org/zap"
 	"golang.org/x/text/transform"
 	"io/ioutil"
 	"net/http"
-	"time"
 )
 
 type Fetcher interface {
@@ -17,17 +14,25 @@ type Fetcher interface {
 }
 
 type BrowserFetch struct {
-	Timeout time.Duration
-	Proxy   proxy.ProxyFunc
-	Logger  *zap.Logger
+	options
 }
 
-func NewBrowserFetch(logger *zap.Logger, proxy proxy.ProxyFunc) *BrowserFetch {
-	return &BrowserFetch{
-		Timeout: 3000 * time.Millisecond,
-		Proxy:   proxy,
-		Logger:  logger,
+//func NewBrowserFetch(logger *zap.Logger, proxy proxy.ProxyFunc) *BrowserFetch {
+//	return &BrowserFetch{
+//		Timeout: 3000 * time.Millisecond,
+//		Proxy:   proxy,
+//		Logger:  logger,
+//	}
+//}
+
+func NewBrowserFetch(opts ...Option) *BrowserFetch {
+	options := defaultOptions
+	for _, opt := range opts {
+		opt(&options)
 	}
+	bf := &BrowserFetch{}
+	bf.options = options
+	return bf
 }
 
 // Get 模拟浏览器访问

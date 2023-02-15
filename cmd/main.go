@@ -6,6 +6,7 @@ import (
 	"crawler/internal/pkg/parse/doubangroup"
 	"crawler/pkg/log"
 	"fmt"
+	"time"
 )
 
 //tag v0.0.9
@@ -25,7 +26,10 @@ func main() {
 		url := fmt.Sprintf("https://www.douban.com/group/szsh/discussion?start=%d", i)
 		seeds = append(seeds, collect.NewCollectRequest(url, cookie, doubangroup.ParseURL))
 	}
-	var f collect.Fetcher = collect.NewBrowserFetch(logger, nil)
+	var f collect.Fetcher = collect.NewBrowserFetch(
+		collect.WithTimeout(3000*time.Millisecond),
+		collect.WithLogger(logger),
+	)
 	s := engine.NewSchedule(
 		engine.WithFetcher(f),
 		engine.WithLogger(logger),
