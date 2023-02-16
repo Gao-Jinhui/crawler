@@ -17,14 +17,6 @@ type BrowserFetch struct {
 	options
 }
 
-//func NewBrowserFetch(logger *zap.Logger, proxy proxy.ProxyFunc) *BrowserFetch {
-//	return &BrowserFetch{
-//		Timeout: 3000 * time.Millisecond,
-//		Proxy:   proxy,
-//		Logger:  logger,
-//	}
-//}
-
 func NewBrowserFetch(opts ...Option) *BrowserFetch {
 	options := defaultOptions
 	for _, opt := range opts {
