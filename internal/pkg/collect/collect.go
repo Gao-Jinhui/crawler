@@ -4,9 +4,11 @@ import (
 	"bufio"
 	"crawler/pkg/format"
 	"fmt"
+	"go.uber.org/zap"
 	"golang.org/x/text/transform"
 	"io/ioutil"
 	"net/http"
+	"time"
 )
 
 type Fetcher interface {
@@ -48,7 +50,13 @@ func (b *BrowserFetch) Get(request *Request) ([]byte, error) {
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36")
 
 	resp, err := client.Do(req)
+
+	time.Sleep(request.Task.WaitTime)
+
 	if err != nil {
+		b.Logger.Error("fetch failed",
+			zap.Error(err),
+		)
 		return nil, err
 	}
 

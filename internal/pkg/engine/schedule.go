@@ -5,111 +5,61 @@ import (
 	"go.uber.org/zap"
 )
 
+type Scheduler interface {
+	Schedule()
+	Push(...*collect.Request)
+	Pull() *collect.Request
+}
+
 type Schedule struct {
 	requestCh chan *collect.Request
 	workerCh  chan *collect.Request
-	out       chan collect.ParseResult
-	options
-}
-
-type Config struct {
-	WorkCount int
-	Fetcher   collect.Fetcher
+	reqQueue  []*collect.Request
 	Logger    *zap.Logger
-	Seeds     []*collect.Request
 }
 
-func NewSchedule(opts ...Option) *Schedule {
-	options := defaultOptions
-	for _, opt := range opts {
-		opt(&options)
-	}
+func NewSchedule() *Schedule {
 	s := &Schedule{}
-	s.options = options
+	requestCh := make(chan *collect.Request)
+	workerCh := make(chan *collect.Request)
+	s.requestCh = requestCh
+	s.workerCh = workerCh
 	return s
 }
 
-func (s *Schedule) Run() {
-	requestCh := make(chan *collect.Request)
-	workerCh := make(chan *collect.Request)
-	out := make(chan collect.ParseResult)
-	s.requestCh = requestCh
-	s.workerCh = workerCh
-	s.out = out
-	go s.Schedule()
-	for i := 0; i < s.WorkCount; i++ {
-		go s.CreateWork()
+func (s *Schedule) Push(reqs ...*collect.Request) {
+	for _, req := range reqs {
+		s.requestCh <- req
 	}
-	s.HandleResult()
+}
+
+func (s *Schedule) Pull() *collect.Request {
+	r := <-s.workerCh
+	//fmt.Println("get a request from worker channel")
+	return r
+}
+
+func (s *Schedule) Output() *collect.Request {
+	r := <-s.workerCh
+	return r
 }
 
 func (s *Schedule) Schedule() {
-	var reqQueue []*collect.Request
-	//todo: rename parameter
-	for _, task := range s.Seeds {
-		task.RootRequest.Task = task
-		task.RootRequest.Url = task.Url
-		reqQueue = append(reqQueue, task.RootRequest)
-	}
-	go func() {
-		for {
-			var req *collect.Request
-			var ch chan *collect.Request
-
-			if len(reqQueue) > 0 {
-				req = reqQueue[0]
-				reqQueue = reqQueue[1:]
-				ch = s.workerCh
-			}
-			select {
-			case r := <-s.requestCh:
-				reqQueue = append(reqQueue, r)
-
-			case ch <- req:
-			}
-		}
-	}()
-}
-
-func (s *Schedule) CreateWork() {
 	for {
-		r := <-s.workerCh
-		if err := r.CheckDepth(); err != nil {
-			s.Logger.Error("check depth error",
-				zap.Error(err),
-			)
-			continue
-		}
-		body, err := s.Fetcher.Get(r)
-		if len(body) < 6000 {
-			s.Logger.Error("can't fetch ",
-				zap.Int("length", len(body)),
-				zap.String("url", r.Url),
-			)
-		}
-		if err != nil {
-			s.Logger.Error("can't fetch ",
-				zap.Error(err),
-				zap.String("url", r.Url),
-			)
-			continue
-		}
-		result := r.ParseFunc(body, r)
-		s.out <- result
-	}
-}
+		var req *collect.Request
+		var ch chan *collect.Request
 
-func (s *Schedule) HandleResult() {
-	for {
+		if len(s.reqQueue) > 0 {
+			req = s.reqQueue[0]
+			s.reqQueue = s.reqQueue[1:]
+			ch = s.workerCh
+		}
 		select {
-		case result := <-s.out:
-			for _, req := range result.Requests {
-				s.requestCh <- req
-			}
-			for _, item := range result.Items {
-				// todo: store
-				s.Logger.Sugar().Info("get result: ", item)
-			}
+		case r := <-s.requestCh:
+			s.reqQueue = append(s.reqQueue, r)
+
+		case ch <- req:
+			//fmt.Println("add a request to worker channel ")
 		}
 	}
 }
