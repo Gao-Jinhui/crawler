@@ -68,6 +68,12 @@ func (s *Schedule) Schedule() {
 func (s *Schedule) CreateWork() {
 	for {
 		r := <-s.workerCh
+		if err := r.CheckDepth(); err != nil {
+			s.Logger.Error("check depth error",
+				zap.Error(err),
+			)
+			continue
+		}
 		body, err := s.Fetcher.Get(r)
 		if len(body) < 6000 {
 			s.Logger.Error("can't fetch ",
