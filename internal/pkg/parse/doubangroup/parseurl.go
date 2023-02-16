@@ -19,7 +19,7 @@ func ParseURL(contents []byte, req *collect.Request) collect.ParseResult {
 	for _, m := range matches {
 		u := string(m[1])
 		result.Requests = append(result.Requests,
-			collect.NewCollectRequest(u, req.Cookie, req.Depth+1, req.MaxDepth, req.WaitTime, GetContent))
+			collect.NewCollectRequest(u, req.Depth+1, GetContent, req.Task))
 	}
 	return result
 }
