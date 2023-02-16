@@ -2,31 +2,26 @@ package collect
 
 import (
 	"errors"
-	"time"
 )
 
 type Request struct {
+	Task      *Task
 	Url       string
-	Cookie    string
 	Depth     int
-	MaxDepth  int
-	WaitTime  time.Duration
 	ParseFunc func([]byte, *Request) ParseResult
 }
 
-func NewCollectRequest(url, cookie string, depth, maxDepth int, waitTime time.Duration, parseFunc func([]byte, *Request) ParseResult) *Request {
+func NewCollectRequest(url string, depth int, parseFunc func([]byte, *Request) ParseResult, task *Task) *Request {
 	return &Request{
 		Url:       url,
-		Cookie:    cookie,
 		Depth:     depth,
-		MaxDepth:  maxDepth,
-		WaitTime:  waitTime,
 		ParseFunc: parseFunc,
+		Task:      task,
 	}
 }
 
 func (req *Request) CheckDepth() error {
-	if req.Depth > req.MaxDepth {
+	if req.Depth > req.Task.MaxDepth {
 		return errors.New("Max Depth limit reached ")
 	}
 	return nil
