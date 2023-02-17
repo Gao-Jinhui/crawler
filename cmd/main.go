@@ -30,12 +30,16 @@ func main() {
 	for i := 0; i <= 100; i += 25 {
 		url := fmt.Sprintf("https://www.douban.com/group/szsh/discussion?start=%d", i)
 		seeds = append(seeds, &collect.Task{
-			Url:         url,
-			WaitTime:    time.Second,
-			MaxDepth:    5,
-			Fetcher:     f,
-			Cookie:      cookie,
-			RootRequest: &collect.Request{ParseFunc: doubangroup.ParseURL},
+			Url:      url,
+			WaitTime: time.Second,
+			MaxDepth: 5,
+			Fetcher:  f,
+			Cookie:   cookie,
+			RootRequest: &collect.Request{
+				Priority:  1,
+				Method:    "GET",
+				ParseFunc: doubangroup.ParseURL,
+			},
 		})
 	}
 

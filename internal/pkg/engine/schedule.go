@@ -12,10 +12,11 @@ type Scheduler interface {
 }
 
 type Schedule struct {
-	requestCh chan *collect.Request
-	workerCh  chan *collect.Request
-	reqQueue  []*collect.Request
-	Logger    *zap.Logger
+	requestCh   chan *collect.Request
+	workerCh    chan *collect.Request
+	priReqQueue []*collect.Request
+	reqQueue    []*collect.Request
+	Logger      *zap.Logger
 }
 
 func NewSchedule() *Schedule {
@@ -48,17 +49,28 @@ func (s *Schedule) Schedule() {
 	var req *collect.Request
 	var ch chan *collect.Request
 	for {
-		if len(s.reqQueue) > 0 {
+		if req == nil && len(s.priReqQueue) > 0 {
+			req = s.priReqQueue[0]
+			s.priReqQueue = s.priReqQueue[1:]
+			ch = s.workerCh
+		}
+		if req == nil && len(s.reqQueue) > 0 {
 			req = s.reqQueue[0]
 			s.reqQueue = s.reqQueue[1:]
 			ch = s.workerCh
 		}
 		select {
 		case r := <-s.requestCh:
-			s.reqQueue = append(s.reqQueue, r)
+			if r.Priority > 0 {
+				s.priReqQueue = append(s.priReqQueue, r)
+			} else {
+				s.reqQueue = append(s.reqQueue, r)
+			}
 
 		case ch <- req:
 			//fmt.Println("add a request to worker channel ")
+			req = nil
+			ch = nil
 		}
 	}
 }
