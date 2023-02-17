@@ -45,10 +45,9 @@ func (s *Schedule) Output() *collect.Request {
 }
 
 func (s *Schedule) Schedule() {
+	var req *collect.Request
+	var ch chan *collect.Request
 	for {
-		var req *collect.Request
-		var ch chan *collect.Request
-
 		if len(s.reqQueue) > 0 {
 			req = s.reqQueue[0]
 			s.reqQueue = s.reqQueue[1:]

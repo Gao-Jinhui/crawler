@@ -3,10 +3,13 @@ package engine
 import (
 	"crawler/internal/pkg/collect"
 	"go.uber.org/zap"
+	"sync"
 )
 
 type Crawler struct {
-	out chan collect.ParseResult
+	out         chan collect.ParseResult
+	Visited     map[string]bool
+	VisitedLock sync.Mutex
 	options
 }
 
@@ -17,6 +20,7 @@ func NewCrawler(opts ...Option) *Crawler {
 	}
 	c := &Crawler{}
 	out := make(chan collect.ParseResult)
+	c.Visited = make(map[string]bool, 100)
 	c.out = out
 	c.options = options
 	return c
@@ -50,6 +54,13 @@ func (c *Crawler) CreateWork() {
 			)
 			continue
 		}
+		if c.HasVisited(r) {
+			c.Logger.Debug("request has visited",
+				zap.String("url:", r.Url),
+			)
+			continue
+		}
+		c.StoreVisited(r)
 		body, err := r.Task.Fetcher.Get(r)
 		if len(body) < 6000 {
 			c.Logger.Error("can't fetch ",
@@ -85,5 +96,22 @@ func (c *Crawler) HandleResult() {
 				c.Logger.Sugar().Info("get result: ", item)
 			}
 		}
+	}
+}
+
+func (c *Crawler) HasVisited(r *collect.Request) bool {
+	c.VisitedLock.Lock()
+	defer c.VisitedLock.Unlock()
+	unique := r.Unique()
+	return c.Visited[unique]
+}
+
+func (c *Crawler) StoreVisited(reqs ...*collect.Request) {
+	c.VisitedLock.Lock()
+	defer c.VisitedLock.Unlock()
+
+	for _, r := range reqs {
+		unique := r.Unique()
+		c.Visited[unique] = true
 	}
 }
