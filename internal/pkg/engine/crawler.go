@@ -10,6 +10,8 @@ type Crawler struct {
 	out         chan collect.ParseResult
 	Visited     map[string]bool
 	VisitedLock sync.Mutex
+	failures    map[string]*collect.Request // 失败请求id -> 失败请求
+	failureLock sync.Mutex
 	options
 }
 
@@ -21,6 +23,7 @@ func NewCrawler(opts ...Option) *Crawler {
 	c := &Crawler{}
 	out := make(chan collect.ParseResult)
 	c.Visited = make(map[string]bool, 100)
+	c.failures = make(map[string]*collect.Request)
 	c.out = out
 	c.options = options
 	return c
@@ -67,6 +70,7 @@ func (c *Crawler) CreateWork() {
 				zap.Int("length", len(body)),
 				zap.String("url", r.Url),
 			)
+			c.SetFailure(r)
 			continue
 		}
 		if err != nil {
@@ -74,6 +78,7 @@ func (c *Crawler) CreateWork() {
 				zap.Error(err),
 				zap.String("url", r.Url),
 			)
+			c.SetFailure(r)
 			continue
 		}
 		result := r.ParseFunc(body, r)
@@ -114,4 +119,21 @@ func (c *Crawler) StoreVisited(reqs ...*collect.Request) {
 		unique := r.Unique()
 		c.Visited[unique] = true
 	}
+}
+
+func (c *Crawler) SetFailure(req *collect.Request) {
+	if !req.Task.Reload {
+		c.VisitedLock.Lock()
+		unique := req.Unique()
+		delete(c.Visited, unique)
+		c.VisitedLock.Unlock()
+	}
+	c.failureLock.Lock()
+	defer c.failureLock.Unlock()
+	if _, ok := c.failures[req.Unique()]; !ok {
+		// 首次失败时，再重新执行一次
+		c.failures[req.Unique()] = req
+		c.scheduler.Push(req)
+	}
+	// todo: 失败2次，加载到失败队列中
 }
