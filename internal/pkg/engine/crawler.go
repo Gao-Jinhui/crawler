@@ -40,9 +40,19 @@ func (c *Crawler) Run() {
 func (c *Crawler) Schedule() {
 	var reqs []*collect.Request
 	for _, seed := range c.Seeds {
-		seed.RootRequest.Task = seed
-		seed.RootRequest.Url = seed.Url
-		reqs = append(reqs, seed.RootRequest)
+		task := Store.hash[seed.Name]
+		task.Fetcher = seed.Fetcher
+		rootreqs, err := task.Rule.Root()
+		if err != nil {
+			c.Logger.Error("get root failed",
+				zap.Error(err),
+			)
+			continue
+		}
+		for _, req := range rootreqs {
+			req.Task = task
+		}
+		reqs = append(reqs, rootreqs...)
 	}
 	go c.scheduler.Schedule()
 	go c.scheduler.Push(reqs...)
@@ -50,38 +60,56 @@ func (c *Crawler) Schedule() {
 
 func (c *Crawler) CreateWork() {
 	for {
-		r := c.scheduler.Pull()
-		if err := r.CheckDepth(); err != nil {
+		req := c.scheduler.Pull()
+		if err := req.CheckDepth(); err != nil {
 			c.Logger.Error("check failed",
 				zap.Error(err),
 			)
+			//fmt.Println(req.Depth)
+			//fmt.Println(req.Task.MaxDepth)
 			continue
 		}
-		if c.HasVisited(r) {
+		if !req.Task.Reload && c.HasVisited(req) {
 			c.Logger.Debug("request has visited",
-				zap.String("url:", r.Url),
+				zap.String("url:", req.Url),
 			)
 			continue
 		}
-		c.StoreVisited(r)
-		body, err := r.Task.Fetcher.Get(r)
-		if len(body) < 6000 {
-			c.Logger.Error("can't fetch ",
-				zap.Int("length", len(body)),
-				zap.String("url", r.Url),
-			)
-			c.SetFailure(r)
-			continue
-		}
+		c.StoreVisited(req)
+
+		body, err := req.Task.Fetcher.Get(req)
 		if err != nil {
 			c.Logger.Error("can't fetch ",
 				zap.Error(err),
-				zap.String("url", r.Url),
+				zap.String("url", req.Url),
 			)
-			c.SetFailure(r)
+			c.SetFailure(req)
 			continue
 		}
-		result := r.ParseFunc(body, r)
+
+		if len(body) < 6000 {
+			c.Logger.Error("can't fetch ",
+				zap.Int("length", len(body)),
+				zap.String("url", req.Url),
+			)
+			c.SetFailure(req)
+			continue
+		}
+
+		rule := req.Task.Rule.Trunk[req.RuleName]
+
+		result, err := rule.ParseFunc(&collect.Context{
+			body,
+			req,
+		})
+
+		if err != nil {
+			c.Logger.Error("ParseFunc failed ",
+				zap.Error(err),
+				zap.String("url", req.Url),
+			)
+			continue
+		}
 
 		if len(result.Requests) > 0 {
 			go c.scheduler.Push(result.Requests...)
