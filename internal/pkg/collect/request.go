@@ -15,6 +15,7 @@ type Request struct {
 	Priority int
 	//ParseFunc func([]byte, *Request) ParseResult
 	RuleName string
+	TmpData  *Temp
 }
 
 func NewCollectRequest(url string, depth int, parseFunc func([]byte, *Request) ParseResult, task *Task) *Request {
