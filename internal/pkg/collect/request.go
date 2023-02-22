@@ -7,21 +7,22 @@ import (
 )
 
 type Request struct {
-	unique    string
-	Task      *Task
-	Url       string
-	Depth     int
-	Method    string
-	Priority  int
-	ParseFunc func([]byte, *Request) ParseResult
+	unique   string
+	Task     *Task
+	Url      string
+	Depth    int
+	Method   string
+	Priority int
+	//ParseFunc func([]byte, *Request) ParseResult
+	RuleName string
 }
 
 func NewCollectRequest(url string, depth int, parseFunc func([]byte, *Request) ParseResult, task *Task) *Request {
 	return &Request{
-		Url:       url,
-		Depth:     depth,
-		ParseFunc: parseFunc,
-		Task:      task,
+		Url:   url,
+		Depth: depth,
+		//ParseFunc: parseFunc,
+		Task: task,
 	}
 }
 
