@@ -3,6 +3,7 @@ package collect
 import (
 	"bufio"
 	"crawler/pkg/format"
+	"crawler/pkg/useragent"
 	"fmt"
 	"go.uber.org/zap"
 	"golang.org/x/text/transform"
@@ -47,7 +48,7 @@ func (b *BrowserFetch) Get(request *Request) ([]byte, error) {
 	if len(request.Task.Cookie) > 0 {
 		req.Header.Set("Cookie", request.Task.Cookie)
 	}
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36")
+	req.Header.Set("User-Agent", useragent.GenerateRandomUA())
 
 	resp, err := client.Do(req)
 
