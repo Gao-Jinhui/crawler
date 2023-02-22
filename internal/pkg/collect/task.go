@@ -9,4 +9,5 @@ type Task struct {
 	RootRequest *Request
 	WaitTime    time.Duration
 	Fetcher     Fetcher
+	Reload      bool // 网站是否可以重复爬取
 }
