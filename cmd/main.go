@@ -7,7 +7,6 @@ import (
 	"time"
 )
 
-//tag v0.0.9
 func main() {
 	logger := log.GetLogger()
 
@@ -26,7 +25,8 @@ func main() {
 	seeds := make([]*collect.Task, 0, 1000)
 
 	seeds = append(seeds, &collect.Task{
-		Name:    "find_douban_sun_room",
+		//Name:    "find_douban_sun_room",
+		Name:    "douban_book_list",
 		Fetcher: f,
 	})
 
