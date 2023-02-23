@@ -1,6 +1,9 @@
 package collect
 
-import "time"
+import (
+	"crawler/internal/pkg/collector"
+	"time"
+)
 
 type Task struct {
 	//Property
@@ -13,4 +16,5 @@ type Task struct {
 	Fetcher     Fetcher
 	Reload      bool // 网站是否可以重复爬取
 	Rule        RuleTree
+	Storage     collector.Storage
 }
