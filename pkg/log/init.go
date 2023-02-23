@@ -5,7 +5,7 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-func GetLogger() *zap.Logger {
+func NewZapLogger() *zap.Logger {
 	// log
 	plugin := NewStdoutPlugin(zapcore.InfoLevel)
 	logger := NewLogger(plugin)

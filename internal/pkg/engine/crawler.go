@@ -2,6 +2,7 @@ package engine
 
 import (
 	"crawler/internal/pkg/collect"
+	"crawler/internal/pkg/collector"
 	"go.uber.org/zap"
 	"sync"
 )
@@ -126,6 +127,14 @@ func (c *Crawler) HandleResult() {
 			//fmt.Println("get a result ")
 			for _, item := range result.Items {
 				// todo: store
+				switch d := item.(type) {
+				case *collector.DataCell:
+					name := d.GetTaskName()
+					task := Store.hash[name]
+					if err := task.Storage.Save(d); err != nil {
+						c.Logger.Error("failed to create", zap.String("error", err.Error()))
+					}
+				}
 				c.Logger.Sugar().Info("get result: ", item)
 			}
 		}

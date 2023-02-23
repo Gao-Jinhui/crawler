@@ -2,6 +2,7 @@ package doubanbook
 
 import (
 	"crawler/internal/pkg/collect"
+	"crawler/internal/pkg/model"
 	"regexp"
 	"strconv"
 )
@@ -64,14 +65,25 @@ func ParseBookDetail(ctx *collect.Context) (collect.ParseResult, error) {
 	bookName := ctx.Req.TmpData.Get("book_name")
 	page, _ := strconv.Atoi(ExtraString(ctx.Body, pageRe))
 
-	book := map[string]interface{}{
-		"书名":  bookName,
-		"作者":  ExtraString(ctx.Body, autoRe),
-		"页数":  page,
-		"出版社": ExtraString(ctx.Body, public),
-		"得分":  ExtraString(ctx.Body, scoreRe),
-		"价格":  ExtraString(ctx.Body, priceRe),
-		"简介":  ExtraString(ctx.Body, intoRe),
+	//book := map[string]interface{}{
+	//	"Name":      bookName,
+	//	"Author":    ExtraString(ctx.Body, autoRe),
+	//	"Page":      page,
+	//	"Publisher": ExtraString(ctx.Body, public),
+	//	"Score":     ExtraString(ctx.Body, scoreRe),
+	//	"Price":     ExtraString(ctx.Body, priceRe),
+	//	"Intro":     ExtraString(ctx.Body, intoRe),
+	//	"Url":       ctx.Req.Url,
+	//}
+	book := &model.Book{
+		Name:      bookName.(string),
+		Author:    ExtraString(ctx.Body, autoRe),
+		Page:      page,
+		Publisher: ExtraString(ctx.Body, public),
+		Score:     ExtraString(ctx.Body, scoreRe),
+		Price:     ExtraString(ctx.Body, priceRe),
+		Intro:     ExtraString(ctx.Body, intoRe),
+		Url:       ctx.Req.Url,
 	}
 	data := ctx.Output(book)
 
