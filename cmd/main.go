@@ -14,7 +14,7 @@ import (
 func main() {
 	logger := log.NewZapLogger()
 
-	// proxy
+	//proxy
 	//proxyURLs := []string{"http://127.0.0.1:8888", "http://127.0.0.1:8889"}
 	//p, err := proxy.RoundRobinProxySwitcher(proxyURLs...)
 	//if err != nil {
@@ -27,6 +27,7 @@ func main() {
 	var f collect.Fetcher = collect.NewBrowserFetch(
 		collect.WithTimeout(3000*time.Millisecond),
 		collect.WithLogger(logger),
+		//collect.WithProxy(p),
 	)
 
 	var storage collector.Storage = mysql.NewSqlClient(config.GetMysqlConfig(), mysql.WithLogger(logger))

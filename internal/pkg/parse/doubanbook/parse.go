@@ -49,7 +49,7 @@ func ParseBookList(ctx *collect.Context) (collect.ParseResult, error) {
 		result.Requests = append(result.Requests, req)
 	}
 	// 在添加limit之前，临时减少抓取数量,防止被服务器封禁
-	result.Requests = result.Requests[:5]
+	result.Requests = result.Requests[:1]
 
 	return result, nil
 }

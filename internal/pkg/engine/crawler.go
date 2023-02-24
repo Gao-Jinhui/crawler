@@ -43,6 +43,7 @@ func (c *Crawler) Schedule() {
 	for _, seed := range c.Seeds {
 		task := Store.hash[seed.Name]
 		task.Fetcher = seed.Fetcher
+		task.Storage = seed.Storage
 		rootreqs, err := task.Rule.Root()
 		if err != nil {
 			c.Logger.Error("get root failed",
@@ -124,9 +125,7 @@ func (c *Crawler) HandleResult() {
 	for {
 		select {
 		case result := <-c.out:
-			//fmt.Println("get a result ")
 			for _, item := range result.Items {
-				// todo: store
 				switch d := item.(type) {
 				case *collector.DataCell:
 					name := d.GetTaskName()
