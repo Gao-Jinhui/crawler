@@ -9,7 +9,6 @@ import (
 	"golang.org/x/text/transform"
 	"io/ioutil"
 	"net/http"
-	"time"
 )
 
 type Fetcher interface {
@@ -52,9 +51,7 @@ func (b *BrowserFetch) Get(request *Request) ([]byte, error) {
 	//req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36 Edg/110.0.1587.50")
 
 	resp, err := client.Do(req)
-
-	time.Sleep(request.Task.WaitTime)
-
+	
 	if err != nil {
 		b.Logger.Error("fetch failed",
 			zap.Error(err),

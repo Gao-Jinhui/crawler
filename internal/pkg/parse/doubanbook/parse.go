@@ -3,6 +3,7 @@ package doubanbook
 import (
 	"crawler/internal/pkg/collect"
 	"crawler/internal/pkg/model"
+	"go.uber.org/zap"
 	"regexp"
 	"strconv"
 )
@@ -25,8 +26,9 @@ func ParseTag(ctx *collect.Context) (collect.ParseResult, error) {
 				RuleName: "书籍列表",
 			})
 	}
+	zap.S().Debugln("parse book tag,count:", len(result.Requests))
 	// 在添加limit之前，临时减少抓取数量,防止被服务器封禁
-	result.Requests = result.Requests[:1]
+	result.Requests = result.Requests[:5]
 	return result, nil
 }
 
@@ -49,7 +51,7 @@ func ParseBookList(ctx *collect.Context) (collect.ParseResult, error) {
 		result.Requests = append(result.Requests, req)
 	}
 	// 在添加limit之前，临时减少抓取数量,防止被服务器封禁
-	result.Requests = result.Requests[:1]
+	result.Requests = result.Requests[:5]
 
 	return result, nil
 }

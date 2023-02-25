@@ -44,6 +44,7 @@ func (c *Crawler) Schedule() {
 		task := Store.hash[seed.Name]
 		task.Fetcher = seed.Fetcher
 		task.Storage = seed.Storage
+		task.Limit = seed.Limit
 		rootreqs, err := task.Rule.Root()
 		if err != nil {
 			c.Logger.Error("get root failed",
@@ -67,8 +68,6 @@ func (c *Crawler) CreateWork() {
 			c.Logger.Error("check failed",
 				zap.Error(err),
 			)
-			//fmt.Println(req.Depth)
-			//fmt.Println(req.Task.MaxDepth)
 			continue
 		}
 		if !req.Task.Reload && c.HasVisited(req) {
@@ -79,7 +78,7 @@ func (c *Crawler) CreateWork() {
 		}
 		c.StoreVisited(req)
 
-		body, err := req.Task.Fetcher.Get(req)
+		body, err := req.Fetch()
 		if err != nil {
 			c.Logger.Error("can't fetch ",
 				zap.Error(err),
