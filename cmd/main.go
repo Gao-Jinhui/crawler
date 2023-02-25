@@ -5,14 +5,20 @@ import (
 	"crawler/internal/pkg/collector"
 	"crawler/internal/pkg/config"
 	"crawler/internal/pkg/engine"
+	"crawler/internal/pkg/limiter"
 	"crawler/internal/pkg/store/mysql"
 	"crawler/pkg/log"
 	"go.uber.org/zap"
+	"golang.org/x/time/rate"
 	"time"
 )
 
 func main() {
 	logger := log.NewZapLogger()
+
+	secondLimiter := rate.NewLimiter(limiter.Per(1, 2*time.Second), 1)
+	minuteLimiter := rate.NewLimiter(limiter.Per(20, 1*time.Minute), 20)
+	multiLimiter := limiter.MultiLimiter(secondLimiter, minuteLimiter)
 
 	//proxy
 	//proxyURLs := []string{"http://127.0.0.1:8888", "http://127.0.0.1:8889"}
@@ -25,7 +31,7 @@ func main() {
 	}
 
 	var f collect.Fetcher = collect.NewBrowserFetch(
-		collect.WithTimeout(3000*time.Millisecond),
+		collect.WithTimeout(3500*time.Millisecond),
 		collect.WithLogger(logger),
 		//collect.WithProxy(p),
 	)
@@ -34,19 +40,6 @@ func main() {
 	if storage == nil {
 		return
 	}
-	//book := &model.Book{
-	//	Name:      "111111",
-	//	Author:    "111111",
-	//	Page:      2,
-	//	Publisher: "111111",
-	//	Score:     "111111",
-	//	Price:     "111111",
-	//	Intro:     "111111",
-	//	Url:       "222222222",
-	//}
-	//err := storage.Save(&collector.DataCell{Data: map[string]interface{}{
-	//	"Data": book,
-	//}})
 
 	seeds := make([]*collect.Task, 0, 1000)
 
@@ -54,7 +47,8 @@ func main() {
 		//Name:    "find_douban_sun_room",
 		Name:    "douban_book_list",
 		Fetcher: f,
-		Storage: storage, //todo
+		Storage: storage,
+		Limit:   multiLimiter,
 	})
 
 	c := engine.NewCrawler(

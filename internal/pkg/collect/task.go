@@ -2,7 +2,7 @@ package collect
 
 import (
 	"crawler/internal/pkg/collector"
-	"time"
+	"crawler/internal/pkg/limiter"
 )
 
 type Task struct {
@@ -12,9 +12,10 @@ type Task struct {
 	Cookie      string
 	MaxDepth    int
 	RootRequest *Request
-	WaitTime    time.Duration
+	WaitTime    int64
 	Fetcher     Fetcher
 	Reload      bool // 网站是否可以重复爬取
 	Rule        RuleTree
 	Storage     collector.Storage
+	Limit       limiter.RateLimiter
 }
