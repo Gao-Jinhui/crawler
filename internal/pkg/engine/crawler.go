@@ -1,17 +1,17 @@
 package engine
 
 import (
-	"crawler/internal/pkg/collect"
 	"crawler/internal/pkg/collector"
+	"crawler/internal/pkg/spider"
 	"go.uber.org/zap"
 	"sync"
 )
 
 type Crawler struct {
-	out         chan collect.ParseResult
+	out         chan spider.ParseResult
 	Visited     map[string]bool
 	VisitedLock sync.Mutex
-	failures    map[string]*collect.Request // 失败请求id -> 失败请求
+	failures    map[string]*spider.Request // 失败请求id -> 失败请求
 	failureLock sync.Mutex
 	options
 }
@@ -22,9 +22,9 @@ func NewCrawler(opts ...Option) *Crawler {
 		opt(&options)
 	}
 	c := &Crawler{}
-	out := make(chan collect.ParseResult)
+	out := make(chan spider.ParseResult)
 	c.Visited = make(map[string]bool, 100)
-	c.failures = make(map[string]*collect.Request)
+	c.failures = make(map[string]*spider.Request)
 	c.out = out
 	c.options = options
 	return c
@@ -39,13 +39,14 @@ func (c *Crawler) Run() {
 }
 
 func (c *Crawler) Schedule() {
-	var reqs []*collect.Request
-	for _, seed := range c.Seeds {
-		task := Store.hash[seed.Name]
-		task.Fetcher = seed.Fetcher
-		task.Storage = seed.Storage
-		task.Limit = seed.Limit
-		rootreqs, err := task.Rule.Root()
+	var reqs []*spider.Request
+	for _, taskSeed := range c.TaskSeeds {
+		//todo
+		if taskSeed == nil {
+			continue
+		}
+		taskSeed.Rule = Store.GetRuleTree(taskSeed.Name)
+		rootreqs, err := taskSeed.Rule.Root()
 		if err != nil {
 			c.Logger.Error("get root failed",
 				zap.Error(err),
@@ -53,7 +54,7 @@ func (c *Crawler) Schedule() {
 			continue
 		}
 		for _, req := range rootreqs {
-			req.Task = task
+			req.Task = taskSeed
 		}
 		reqs = append(reqs, rootreqs...)
 	}
@@ -99,9 +100,9 @@ func (c *Crawler) CreateWork() {
 
 		rule := req.Task.Rule.Trunk[req.RuleName]
 
-		result, err := rule.ParseFunc(&collect.Context{
-			body,
-			req,
+		res, err := rule.ParseFunc(&spider.Context{
+			Body: body,
+			Req:  req,
 		})
 
 		if err != nil {
@@ -111,25 +112,23 @@ func (c *Crawler) CreateWork() {
 			)
 			continue
 		}
-
-		if len(result.Requests) > 0 {
-			go c.scheduler.Push(result.Requests...)
+		// put requests into request channel
+		if len(res.Requests) > 0 {
+			go c.scheduler.Push(res.Requests...)
 		}
 
-		c.out <- result
+		c.out <- res
 	}
 }
 
 func (c *Crawler) HandleResult() {
 	for {
 		select {
-		case result := <-c.out:
-			for _, item := range result.Items {
+		case res := <-c.out:
+			for _, item := range res.Items {
 				switch d := item.(type) {
 				case *collector.DataCell:
-					name := d.GetTaskName()
-					task := Store.hash[name]
-					if err := task.Storage.Save(d); err != nil {
+					if err := d.Storage.Save(d); err != nil {
 						c.Logger.Error("failed to create", zap.String("error", err.Error()))
 					}
 				}
@@ -139,14 +138,14 @@ func (c *Crawler) HandleResult() {
 	}
 }
 
-func (c *Crawler) HasVisited(r *collect.Request) bool {
+func (c *Crawler) HasVisited(r *spider.Request) bool {
 	c.VisitedLock.Lock()
 	defer c.VisitedLock.Unlock()
 	unique := r.Unique()
 	return c.Visited[unique]
 }
 
-func (c *Crawler) StoreVisited(reqs ...*collect.Request) {
+func (c *Crawler) StoreVisited(reqs ...*spider.Request) {
 	c.VisitedLock.Lock()
 	defer c.VisitedLock.Unlock()
 
@@ -156,7 +155,7 @@ func (c *Crawler) StoreVisited(reqs ...*collect.Request) {
 	}
 }
 
-func (c *Crawler) SetFailure(req *collect.Request) {
+func (c *Crawler) SetFailure(req *spider.Request) {
 	if !req.Task.Reload {
 		c.VisitedLock.Lock()
 		unique := req.Unique()

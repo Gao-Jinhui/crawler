@@ -1,53 +1,53 @@
 package engine
 
 import (
-	"crawler/internal/pkg/collect"
+	"crawler/internal/pkg/spider"
 	"go.uber.org/zap"
 )
 
 type Scheduler interface {
 	Schedule()
-	Push(...*collect.Request)
-	Pull() *collect.Request
+	Push(...*spider.Request)
+	Pull() *spider.Request
 }
 
 type Schedule struct {
-	requestCh   chan *collect.Request
-	workerCh    chan *collect.Request
-	priReqQueue []*collect.Request
-	reqQueue    []*collect.Request
+	requestCh   chan *spider.Request
+	workerCh    chan *spider.Request
+	priReqQueue []*spider.Request
+	reqQueue    []*spider.Request
 	Logger      *zap.Logger
 }
 
 func NewSchedule() *Schedule {
 	s := &Schedule{}
-	requestCh := make(chan *collect.Request)
-	workerCh := make(chan *collect.Request)
+	requestCh := make(chan *spider.Request)
+	workerCh := make(chan *spider.Request)
 	s.requestCh = requestCh
 	s.workerCh = workerCh
 	return s
 }
 
-func (s *Schedule) Push(reqs ...*collect.Request) {
+func (s *Schedule) Push(reqs ...*spider.Request) {
 	for _, req := range reqs {
 		s.requestCh <- req
 	}
 }
 
-func (s *Schedule) Pull() *collect.Request {
+func (s *Schedule) Pull() *spider.Request {
 	r := <-s.workerCh
 	//fmt.Println("get a request from worker channel")
 	return r
 }
 
-func (s *Schedule) Output() *collect.Request {
+func (s *Schedule) Output() *spider.Request {
 	r := <-s.workerCh
 	return r
 }
 
 func (s *Schedule) Schedule() {
-	var req *collect.Request
-	var ch chan *collect.Request
+	var req *spider.Request
+	var ch chan *spider.Request
 	for {
 		if req == nil && len(s.priReqQueue) > 0 {
 			req = s.priReqQueue[0]
