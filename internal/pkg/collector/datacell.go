@@ -1,6 +1,7 @@
 package collector
 
 type DataCell struct {
+	Storage
 	Data map[string]interface{}
 }
 

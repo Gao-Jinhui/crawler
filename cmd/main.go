@@ -1,24 +1,17 @@
 package main
 
 import (
-	"crawler/internal/pkg/collect"
 	"crawler/internal/pkg/collector"
 	"crawler/internal/pkg/config"
 	"crawler/internal/pkg/engine"
-	"crawler/internal/pkg/limiter"
+	"crawler/internal/pkg/spider"
 	"crawler/internal/pkg/store/mysql"
 	"crawler/pkg/log"
 	"go.uber.org/zap"
-	"golang.org/x/time/rate"
-	"time"
 )
 
 func main() {
 	logger := log.NewZapLogger()
-
-	secondLimiter := rate.NewLimiter(limiter.Per(1, 2*time.Second), 1)
-	minuteLimiter := rate.NewLimiter(limiter.Per(20, 1*time.Minute), 20)
-	multiLimiter := limiter.MultiLimiter(secondLimiter, minuteLimiter)
 
 	//proxy
 	//proxyURLs := []string{"http://127.0.0.1:8888", "http://127.0.0.1:8889"}
@@ -30,9 +23,8 @@ func main() {
 		logger.Error("failed to init config", zap.String("err", err.Error()))
 	}
 
-	var f collect.Fetcher = collect.NewBrowserFetch(
-		collect.WithTimeout(3500*time.Millisecond),
-		collect.WithLogger(logger),
+	var f spider.Fetcher = spider.NewBrowserFetch(
+		spider.WithTimeout(config.GetFetcherTimeout()),
 		//collect.WithProxy(p),
 	)
 
@@ -40,16 +32,9 @@ func main() {
 	if storage == nil {
 		return
 	}
+	taskConfigs := config.GetTaskConfigs()
 
-	seeds := make([]*collect.Task, 0, 1000)
-
-	seeds = append(seeds, &collect.Task{
-		//Name:    "find_douban_sun_room",
-		Name:    "douban_book_list",
-		Fetcher: f,
-		Storage: storage,
-		Limit:   multiLimiter,
-	})
+	seeds := spider.ParseTaskConfigs(logger, f, storage, taskConfigs)
 
 	c := engine.NewCrawler(
 		engine.WithFetcher(f),

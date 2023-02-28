@@ -1,4 +1,4 @@
-package collect
+package spider
 
 import (
 	"context"
@@ -10,24 +10,13 @@ import (
 )
 
 type Request struct {
-	unique   string
 	Task     *Task
 	Url      string
-	Depth    int
+	Depth    int64
 	Method   string
 	Priority int
-	//ParseFunc func([]byte, *Request) ParseResult
 	RuleName string
 	TmpData  *Temp
-}
-
-func NewCollectRequest(url string, depth int, parseFunc func([]byte, *Request) ParseResult, task *Task) *Request {
-	return &Request{
-		Url:   url,
-		Depth: depth,
-		//ParseFunc: parseFunc,
-		Task: task,
-	}
 }
 
 func (req *Request) CheckDepth() error {

@@ -1,4 +1,4 @@
-package collect
+package spider
 
 import (
 	"bufio"
@@ -11,21 +11,17 @@ import (
 	"net/http"
 )
 
-type Fetcher interface {
-	Get(resq *Request) ([]byte, error)
-}
-
 type BrowserFetch struct {
-	options
+	BrowserFetcherOptions
 }
 
-func NewBrowserFetch(opts ...Option) *BrowserFetch {
-	options := defaultOptions
+func NewBrowserFetch(opts ...BrowserFetcherOption) *BrowserFetch {
+	options := DefaultBrowserOptions
 	for _, opt := range opts {
 		opt(&options)
 	}
 	bf := &BrowserFetch{}
-	bf.options = options
+	bf.BrowserFetcherOptions = options
 	return bf
 }
 
@@ -51,9 +47,9 @@ func (b *BrowserFetch) Get(request *Request) ([]byte, error) {
 	//req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36 Edg/110.0.1587.50")
 
 	resp, err := client.Do(req)
-	
+
 	if err != nil {
-		b.Logger.Error("fetch failed",
+		request.Task.Logger.Error("fetch failed",
 			zap.Error(err),
 		)
 		return nil, err
