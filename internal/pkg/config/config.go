@@ -1,7 +1,6 @@
 package config
 
 import (
-	"crawler/internal/pkg/spider"
 	"github.com/spf13/viper"
 	"time"
 )
@@ -21,8 +20,14 @@ func GetFetcherTimeout() time.Duration {
 	return time.Duration(viper.GetInt("fetcher.timeout")) * time.Millisecond
 }
 
-func GetTaskConfigs() []spider.TaskConfig {
-	var configs []spider.TaskConfig
+func GetTaskConfigs() []TaskConfig {
+	var configs []TaskConfig
 	viper.UnmarshalKey("task", &configs)
 	return configs
+}
+
+func GetWorkerConfig() WorkerConfig {
+	var config WorkerConfig
+	viper.UnmarshalKey("workerconfig", &config)
+	return config
 }
