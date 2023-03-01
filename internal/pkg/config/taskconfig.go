@@ -1,4 +1,4 @@
-package spider
+package config
 
 type TaskConfig struct {
 	Name     string

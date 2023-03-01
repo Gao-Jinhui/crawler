@@ -2,6 +2,7 @@ package spider
 
 import (
 	"crawler/internal/pkg/collector"
+	"crawler/internal/pkg/config"
 	"crawler/internal/pkg/limiter"
 	"go.uber.org/zap"
 	"golang.org/x/time/rate"
@@ -22,7 +23,7 @@ func NewTask(opts ...TaskOption) *Task {
 	d.TaskOptions = options
 	return d
 }
-func ParseTaskConfigs(logger *zap.Logger, f Fetcher, s collector.Storage, cfgs []TaskConfig) []*Task {
+func ParseTaskConfigs(logger *zap.Logger, f Fetcher, s collector.Storage, cfgs []config.TaskConfig) []*Task {
 	tasks := make([]*Task, 1000)
 	for _, cfg := range cfgs {
 		task := NewTask(

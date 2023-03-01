@@ -4,10 +4,13 @@ import (
 	"crawler/internal/pkg/collector"
 	"crawler/internal/pkg/config"
 	"crawler/internal/pkg/engine"
+	"crawler/internal/pkg/grpc/worker"
 	"crawler/internal/pkg/spider"
 	"crawler/internal/pkg/store/mysql"
 	"crawler/pkg/log"
+	"fmt"
 	"go.uber.org/zap"
+	"time"
 )
 
 func Run() {
@@ -23,6 +26,14 @@ func Run() {
 	if err := config.InitConfig(); err != nil {
 		logger.Error("failed to init config", zap.Error(err))
 	}
+	workerConfig := config.GetWorkerConfig()
+	logger.Sugar().Infof("grpc server config,%+v", workerConfig)
+
+	// start http proxy to GRPC
+	go worker.RunHTTPServer(logger, workerConfig)
+
+	// start grpc server
+	worker.RunGRPCServer(logger, workerConfig)
 
 	var f spider.Fetcher = spider.NewBrowserFetch(
 		spider.WithTimeout(config.GetFetcherTimeout()),

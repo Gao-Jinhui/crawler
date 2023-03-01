@@ -22,5 +22,14 @@ task:
         eventDur: 60
         bucket: 20
     cookie: douban-fav-remind=1; ll="108289"; bid=kKBun9tYW6s; _vwo_uuid_v2=DB23D89A4EBC069790587D76C47D9F426|02ac414d825fe449713e0cb6580492bd; gr_user_id=a0c87ec1-cbfa-4c20-905b-19af38bae496; viewed="5333562_35871233_35519282_30329536_6709783"; push_noty_num=0; push_doumail_num=0; __utmv=30149280.12137; ct=y; dbcl2="121370564:zG7W3OjU/8M"; ck=Xir_; ap_v=0,6.0; __utma=30149280.362716562.1637497006.1677577379.1677661575.42; __utmc=30149280; __utmz=30149280.1677661575.42.23.utmcsr=bing|utmccn=(organic)|utmcmd=organic|utmctr=(not provided); __utmt=1; _pk_ref.100001.3ac3=["","",1677661580,"https://www.douban.com/misc/sorry?original-url=https%3A%2F%2Fbook.douban.com%2F"]; _pk_id.100001.3ac3=eafb8e6878deca88.1670510836.13.1677661580.1677577393.; _pk_ses.100001.3ac3=*; __utmt_douban=1; __utmb=30149280.3.10.1677661575; __utma=81379588.237322096.1670510836.1677577385.1677661580.14; __utmc=81379588; __utmz=81379588.1677661580.14.11.utmcsr=douban.com|utmccn=(referral)|utmcmd=referral|utmcct=/misc/sorry; __utmb=81379588.1.10.1677661580; gr_session_id_22c937bbd8ebd703f2d8e9445f7dfd03=893fceaa-4618-4d7e-97de-e365de9cda86; gr_cs1_893fceaa-4618-4d7e-97de-e365de9cda86=user_id:1; gr_session_id_22c937bbd8ebd703f2d8e9445f7dfd03_893fceaa-4618-4d7e-97de-e365de9cda86=true
+workerConfig:
+  HTTPListenAddress : ":8080"
+  GRPCListenAddress : ":9090"
+  ID : "1"
+  registryAddress : ":2379"
+  registerTTL : 60
+  registerInterval : 15
+  clientTimeOut: 10
+  name: "go.micro.server.worker"
 
 
