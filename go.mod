@@ -5,6 +5,7 @@ go 1.18
 require (
 	github.com/natefinch/lumberjack v2.0.0+incompatible
 	github.com/pkg/errors v0.9.1
+	github.com/spf13/cobra v1.6.1
 	github.com/spf13/viper v1.15.0
 	go.uber.org/zap v1.24.0
 	golang.org/x/net v0.6.0
@@ -18,6 +19,7 @@ require (
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/go-sql-driver/mysql v1.7.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
+	github.com/inconshreveable/mousetrap v1.0.1 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect

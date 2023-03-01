@@ -1,4 +1,4 @@
-package main
+package worker
 
 import (
 	"crawler/internal/pkg/collector"
@@ -10,7 +10,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func main() {
+func Run() {
 	logger := log.NewZapLogger()
 
 	//proxy
@@ -19,8 +19,9 @@ func main() {
 	//if err != nil {
 	//	logger.Error("RoundRobinProxySwitcher failed")
 	//}
+
 	if err := config.InitConfig(); err != nil {
-		logger.Error("failed to init config", zap.String("err", err.Error()))
+		logger.Error("failed to init config", zap.Error(err))
 	}
 
 	var f spider.Fetcher = spider.NewBrowserFetch(
