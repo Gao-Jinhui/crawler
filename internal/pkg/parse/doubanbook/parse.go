@@ -67,16 +67,6 @@ func ParseBookDetail(ctx *spider.Context) (spider.ParseResult, error) {
 	bookName := ctx.Req.TmpData.Get("book_name")
 	page, _ := strconv.Atoi(ExtraString(ctx.Body, pageRe))
 
-	//book := map[string]interface{}{
-	//	"Name":      bookName,
-	//	"Author":    ExtraString(ctx.Body, autoRe),
-	//	"Page":      page,
-	//	"Publisher": ExtraString(ctx.Body, public),
-	//	"Score":     ExtraString(ctx.Body, scoreRe),
-	//	"Price":     ExtraString(ctx.Body, priceRe),
-	//	"Intro":     ExtraString(ctx.Body, intoRe),
-	//	"Url":       ctx.Req.Url,
-	//}
 	book := &model.Book{
 		Name:      bookName.(string),
 		Author:    ExtraString(ctx.Body, autoRe),
