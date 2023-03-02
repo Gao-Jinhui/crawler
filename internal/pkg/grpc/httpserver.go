@@ -1,4 +1,4 @@
-package worker
+package grpc
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 	"net/http"
 )
 
-func RunHTTPServer(logger *zap.Logger, cfg config.WorkerConfig) {
+func RunHTTPServer(logger *zap.Logger, cfg config.ServerConfig) {
 	ctx := context.Background()
 	ctx, cancel := context.WithCancel(ctx)
 

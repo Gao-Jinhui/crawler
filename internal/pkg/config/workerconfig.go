@@ -1,6 +1,6 @@
 package config
 
-type WorkerConfig struct {
+type ServerConfig struct {
 	GRPCListenAddress string
 	HTTPListenAddress string
 	ID                string
