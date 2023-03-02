@@ -24,7 +24,7 @@ func Run() {
 	if err := config.InitConfig(); err != nil {
 		logger.Error("failed to init config", zap.Error(err))
 	}
-	workerConfig := config.GetServerConfig()
+	workerConfig := config.GetWorkerConfig()
 	logger.Sugar().Infof("grpc server config,%+v", workerConfig)
 
 	// start http proxy to GRPC
