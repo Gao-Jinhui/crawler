@@ -68,10 +68,7 @@ func Run() {
 	//if storage == nil {
 	//	return
 	//}
-	//taskConfigs := config.GetTaskConfigs()
-	//
-	//seeds := spider.ParseTaskConfigs(logger, f, storage, taskConfigs)
-	//
+
 	//c := engine.NewCrawler(
 	//	engine.WithFetcher(f),
 	//	engine.WithLogger(logger),

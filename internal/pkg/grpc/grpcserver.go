@@ -35,10 +35,10 @@ func RunGRPCServer(logger *zap.Logger, reg registry.Registry, cfg config.ServerC
 	service.Init()
 
 	if err := greeter.RegisterGreeterHandler(service.Server(), new(greeter.Greeter)); err != nil {
-		logger.Fatal("register handler failed")
+		logger.Fatal("register handler failed", zap.Error(err))
 	}
 
 	if err := service.Run(); err != nil {
-		logger.Fatal("grpc server stop")
+		logger.Fatal("grpc server stop", zap.Error(err))
 	}
 }
