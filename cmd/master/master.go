@@ -4,6 +4,7 @@ import (
 	"crawler/internal/pkg/config"
 	"crawler/internal/pkg/grpc"
 	"crawler/internal/pkg/master"
+	"crawler/internal/pkg/spider"
 	"crawler/pkg/log"
 	"github.com/go-micro/plugins/v4/registry/etcd"
 	"github.com/spf13/cobra"
@@ -43,12 +44,15 @@ func Run() {
 	masterConfig := config.GetMasterConfig(masterID, HTTPListenAddress, GRPCListenAddress)
 	logger.Sugar().Infof("grpc server config,%+v", masterConfig)
 	reg := etcd.NewRegistry(registry.Addrs(masterConfig.RegistryAddress))
+	taskConfigs := config.GetTaskConfigs()
+	seeds := spider.ParseTaskConfigs(logger, nil, nil, taskConfigs)
 	master.New(
 		masterID,
 		master.WithLogger(logger.Named("master")),
 		master.WithGRPCAddress(GRPCListenAddress),
 		master.WithregistryURL(masterConfig.RegistryAddress),
 		master.WithRegistry(reg),
+		master.WithSeeds(seeds),
 	)
 	// start http proxy to GRPC
 	go grpc.RunHTTPServer(logger, masterConfig)

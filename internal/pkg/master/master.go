@@ -5,12 +5,11 @@ import (
 	"crawler/cmd/worker"
 	"errors"
 	"fmt"
+	"github.com/bwmarrin/snowflake"
 	"go-micro.dev/v4/registry"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/client/v3/concurrency"
 	"go.uber.org/zap"
-	"net"
-	"reflect"
 	"sync/atomic"
 	"time"
 )
@@ -20,6 +19,9 @@ type Master struct {
 	ready     int32
 	leaderID  string
 	workNodes map[string]*registry.Node
+	resources map[string]*ResourceSpec
+	IDGen     *snowflake.Node
+	etcdCli   *clientv3.Client
 	options
 }
 
@@ -31,14 +33,30 @@ func New(id string, opts ...Option) (*Master, error) {
 		opt(&options)
 	}
 	m.options = options
+	m.resources = make(map[string]*ResourceSpec)
 
+	node, err := snowflake.NewNode(1)
+	if err != nil {
+		return nil, err
+	}
+	m.IDGen = node
 	ipv4, err := getLocalIP()
 	if err != nil {
 		return nil, err
 	}
 	m.ID = genMasterID(id, ipv4, m.GRPCAddress)
 	m.logger.Sugar().Debugln("master_id:", m.ID)
+	endpoints := []string{m.registryURL}
+	cli, err := clientv3.New(clientv3.Config{Endpoints: endpoints})
+	if err != nil {
+		return nil, err
+	}
+	m.etcdCli = cli
+
+	m.updateWorkNodes()
+	m.AddSeed()
 	go m.Campaign()
+	go m.HandleMsg()
 
 	return &Master{}, nil
 }
@@ -52,13 +70,7 @@ func (m *Master) IsLeader() bool {
 }
 
 func (m *Master) Campaign() {
-	endpoints := []string{m.registryURL}
-	cli, err := clientv3.New(clientv3.Config{Endpoints: endpoints})
-	if err != nil {
-		panic(err)
-	}
-
-	s, err := concurrency.NewSession(cli, concurrency.WithTTL(5))
+	s, err := concurrency.NewSession(m.etcdCli, concurrency.WithTTL(5))
 	if err != nil {
 		fmt.Println("NewSession", "error", "err", err)
 	}
@@ -82,10 +94,12 @@ func (m *Master) Campaign() {
 				m.logger.Error("leader elect failed", zap.Error(err))
 				go m.elect(e, leaderCh)
 			} else {
-				m.logger.Info("master change to leader")
+				m.logger.Info("master start change to leader")
 				m.leaderID = m.ID
 				if !m.IsLeader() {
-					m.BecomeLeader()
+					if err := m.BecomeLeader(); err != nil {
+						m.logger.Error("BecomeLeader failed", zap.Error(err))
+					}
 				}
 			}
 		case resp := <-leaderChange:
@@ -94,7 +108,7 @@ func (m *Master) Campaign() {
 			}
 		case resp := <-workerNodeChange:
 			m.logger.Info("watch worker change", zap.Any("worker:", resp))
-			m.updateNodes()
+			m.updateWorkNodes()
 		case <-time.After(20 * time.Second):
 			rsp, err := e.Leader(context.Background())
 			if err != nil {
@@ -139,11 +153,16 @@ func (m *Master) WatchWorker() chan *registry.Result {
 	return ch
 
 }
-func (m *Master) BecomeLeader() {
+func (m *Master) BecomeLeader() error {
+	if err := m.loadResource(); err != nil {
+		return fmt.Errorf("loadResource failed:%w", err)
+	}
+
 	atomic.StoreInt32(&m.ready, 1)
+	return nil
 }
 
-func (m *Master) updateNodes() {
+func (m *Master) updateWorkNodes() {
 	services, err := m.registry.GetService(worker.ServiceName)
 	if err != nil {
 		m.logger.Error("get service", zap.Error(err))
@@ -163,45 +182,83 @@ func (m *Master) updateNodes() {
 
 }
 
-func workNodeDiff(old map[string]*registry.Node, new map[string]*registry.Node) ([]string, []string, []string) {
-	added := make([]string, 0)
-	deleted := make([]string, 0)
-	changed := make([]string, 0)
-	for k, v := range new {
-		if ov, ok := old[k]; ok {
-			if !reflect.DeepEqual(v, ov) {
-				changed = append(changed, k)
-			}
-		} else {
-			added = append(added, k)
+func (m *Master) AddResource(rs []*ResourceSpec) {
+	for _, r := range rs {
+		r.ID = m.IDGen.Generate().String()
+		ns, err := m.Assign(r)
+		if err != nil {
+			m.logger.Error("assign failed", zap.Error(err))
+			continue
 		}
-	}
-	for k := range old {
-		if _, ok := new[k]; !ok {
-			deleted = append(deleted, k)
+		r.AssignedNode = ns.Id + "|" + ns.Address
+		r.CreationTime = time.Now().UnixNano()
+		m.logger.Debug("add resource", zap.Any("specs", r))
+
+		_, err = m.etcdCli.Put(context.Background(), getResourcePath(r.Name), encode(r))
+		if err != nil {
+			m.logger.Error("put etcd failed", zap.Error(err))
+			continue
 		}
+		m.resources[r.Name] = r
 	}
-	return added, deleted, changed
 }
 
-// 获取本机网卡IP
-func getLocalIP() (string, error) {
-	var (
-		addrs []net.Addr
-		err   error
-	)
-	// 获取所有网卡
-	if addrs, err = net.InterfaceAddrs(); err != nil {
-		return "", err
-	}
-	// 取第一个非lo的网卡IP
-	for _, addr := range addrs {
-		if ipNet, isIpNet := addr.(*net.IPNet); isIpNet && !ipNet.IP.IsLoopback() {
-			if ipNet.IP.To4() != nil {
-				return ipNet.IP.String(), nil
-			}
+func (m *Master) HandleMsg() {
+	msgCh := make(chan *Message)
+
+	select {
+	case msg := <-msgCh:
+		switch msg.Cmd {
+		case MSGADD:
+			m.AddResource(msg.Specs)
 		}
 	}
 
-	return "", errors.New("no local ip")
+}
+
+func (m *Master) Assign(r *ResourceSpec) (*registry.Node, error) {
+	for _, n := range m.workNodes {
+		return n, nil
+	}
+	return nil, errors.New("no worker nodes")
+}
+
+func (m *Master) AddSeed() {
+	rs := make([]*ResourceSpec, 0, len(m.Seeds))
+	for _, seed := range m.Seeds {
+		if seed == nil {
+			continue
+		}
+		resp, err := m.etcdCli.Get(context.Background(), getResourcePath(seed.Name), clientv3.WithSerializable())
+		if err != nil {
+			m.logger.Error("etcd get faiiled", zap.Error(err))
+			continue
+		}
+		if len(resp.Kvs) == 0 {
+			r := &ResourceSpec{
+				Name: seed.Name,
+			}
+			rs = append(rs, r)
+		}
+	}
+
+	m.AddResource(rs)
+}
+
+func (m *Master) loadResource() error {
+	resp, err := m.etcdCli.Get(context.Background(), RESOURCEPATH, clientv3.WithSerializable())
+	if err != nil {
+		return fmt.Errorf("etcd get failed")
+	}
+
+	resources := make(map[string]*ResourceSpec)
+	for _, kv := range resp.Kvs {
+		r, err := decode(kv.Value)
+		if err == nil && r != nil {
+			resources[r.Name] = r
+		}
+	}
+	m.logger.Info("leader init load resource", zap.Int("lenth", len(m.resources)))
+	m.resources = resources
+	return nil
 }

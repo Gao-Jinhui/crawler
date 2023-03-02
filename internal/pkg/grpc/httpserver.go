@@ -23,11 +23,11 @@ func RunHTTPServer(logger *zap.Logger, cfg config.ServerConfig) {
 	}
 
 	if err := greeter.RegisterGreeterGwFromEndpoint(ctx, mux, cfg.GRPCListenAddress, opts); err != nil {
-		logger.Fatal("Register backend grpc server endpoint failed")
+		logger.Fatal("Register backend grpc server endpoint failed", zap.Error(err))
 	}
 	zap.S().Infof("start http server listening on %v proxy to grpc server;%v", cfg.HTTPListenAddress, cfg.GRPCListenAddress)
 	if err := http.ListenAndServe(cfg.HTTPListenAddress, mux); err != nil {
-		logger.Fatal("http listenAndServe failed")
+		logger.Fatal("http listenAndServe failed", zap.Error(err))
 	}
 
 }
