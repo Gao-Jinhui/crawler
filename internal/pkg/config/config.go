@@ -26,14 +26,20 @@ func GetTaskConfigs() []TaskConfig {
 	return configs
 }
 
-func GetWorkerConfig() ServerConfig {
+func GetWorkerConfig(id, http, grpc string) ServerConfig {
 	var config ServerConfig
 	viper.UnmarshalKey("workerconfig", &config)
+	config.ID = id
+	config.HTTPListenAddress = http
+	config.GRPCListenAddress = grpc
 	return config
 }
 
-func GetMasterConfig() ServerConfig {
+func GetMasterConfig(id, http, grpc string) ServerConfig {
 	var config ServerConfig
 	viper.UnmarshalKey("masterconfig", &config)
+	config.ID = id
+	config.HTTPListenAddress = http
+	config.GRPCListenAddress = grpc
 	return config
 }

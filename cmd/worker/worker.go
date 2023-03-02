@@ -8,8 +8,33 @@ import (
 	"crawler/internal/pkg/spider"
 	"crawler/internal/pkg/store/mysql"
 	"crawler/pkg/log"
+	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 )
+
+var WorkerCmd = &cobra.Command{
+	Use:   "worker",
+	Short: "run worker service.",
+	Long:  "run worker service.",
+	Args:  cobra.NoArgs,
+	Run: func(cmd *cobra.Command, args []string) {
+		Run()
+	},
+}
+
+var workerID string
+var HTTPListenAddress string
+var GRPCListenAddress string
+
+func init() {
+	WorkerCmd.Flags().StringVar(
+		&workerID, "id", "1", "set worker id")
+	WorkerCmd.Flags().StringVar(
+		&HTTPListenAddress, "http", ":8080", "set worker HTTP listen address")
+
+	WorkerCmd.Flags().StringVar(
+		&GRPCListenAddress, "grpc", ":9090", "set worker GRPC listen address")
+}
 
 func Run() {
 	logger := log.NewZapLogger()
@@ -24,7 +49,7 @@ func Run() {
 	if err := config.InitConfig(); err != nil {
 		logger.Error("failed to init config", zap.Error(err))
 	}
-	workerConfig := config.GetWorkerConfig()
+	workerConfig := config.GetWorkerConfig(workerID, HTTPListenAddress, GRPCListenAddress)
 	logger.Sugar().Infof("grpc server config,%+v", workerConfig)
 
 	// start http proxy to GRPC
