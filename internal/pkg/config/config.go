@@ -26,8 +26,8 @@ func GetTaskConfigs() []TaskConfig {
 	return configs
 }
 
-func GetWorkerConfig() WorkerConfig {
-	var config WorkerConfig
+func GetServerConfig() ServerConfig {
+	var config ServerConfig
 	viper.UnmarshalKey("workerconfig", &config)
 	return config
 }

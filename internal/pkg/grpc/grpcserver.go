@@ -1,4 +1,4 @@
-package worker
+package grpc
 
 import (
 	"crawler/internal/pkg/config"
@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-func RunGRPCServer(logger *zap.Logger, cfg config.WorkerConfig) {
+func RunGRPCServer(logger *zap.Logger, cfg config.ServerConfig) {
 	reg := etcd.NewRegistry(registry.Addrs(cfg.RegistryAddress))
 	service := micro.NewService(
 		micro.Server(grpc.NewServer(
