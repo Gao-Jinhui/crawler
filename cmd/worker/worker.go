@@ -8,9 +8,13 @@ import (
 	"crawler/internal/pkg/spider"
 	"crawler/internal/pkg/store/mysql"
 	"crawler/pkg/log"
+	"github.com/go-micro/plugins/v4/registry/etcd"
 	"github.com/spf13/cobra"
+	"go-micro.dev/v4/registry"
 	"go.uber.org/zap"
 )
+
+var ServiceName string = "go.micro.server.worker"
 
 var WorkerCmd = &cobra.Command{
 	Use:   "worker",
@@ -51,12 +55,13 @@ func Run() {
 	}
 	workerConfig := config.GetWorkerConfig(workerID, HTTPListenAddress, GRPCListenAddress)
 	logger.Sugar().Infof("grpc server config,%+v", workerConfig)
+	reg := etcd.NewRegistry(registry.Addrs(workerConfig.RegistryAddress))
 
 	// start http proxy to GRPC
 	go grpc.RunHTTPServer(logger, workerConfig)
 
 	// start grpc server
-	grpc.RunGRPCServer(logger, workerConfig)
+	grpc.RunGRPCServer(logger, reg, workerConfig)
 
 	var f spider.Fetcher = spider.NewBrowserFetch(
 		spider.WithTimeout(config.GetFetcherTimeout()),

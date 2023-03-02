@@ -3,7 +3,6 @@ package grpc
 import (
 	"crawler/internal/pkg/config"
 	"crawler/internal/pkg/proto/greeter"
-	"github.com/go-micro/plugins/v4/registry/etcd"
 	"github.com/go-micro/plugins/v4/server/grpc"
 	"go-micro.dev/v4"
 	"go-micro.dev/v4/client"
@@ -13,8 +12,7 @@ import (
 	"time"
 )
 
-func RunGRPCServer(logger *zap.Logger, cfg config.ServerConfig) {
-	reg := etcd.NewRegistry(registry.Addrs(cfg.RegistryAddress))
+func RunGRPCServer(logger *zap.Logger, reg registry.Registry, cfg config.ServerConfig) {
 	service := micro.NewService(
 		micro.Server(grpc.NewServer(
 			server.Id(cfg.ID),
