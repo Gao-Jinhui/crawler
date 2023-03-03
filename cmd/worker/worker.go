@@ -31,7 +31,6 @@ func init() {
 		&workerID, "id", "1", "set worker id")
 	WorkerCmd.Flags().StringVar(
 		&HTTPListenAddress, "http", ":8071", "set worker HTTP listen address")
-
 	WorkerCmd.Flags().StringVar(
 		&GRPCListenAddress, "grpc", ":9081", "set worker GRPC listen address")
 }
@@ -54,10 +53,10 @@ func Run() {
 	reg := etcd.NewRegistry(registry.Addrs(workerConfig.RegistryAddress))
 
 	// start http proxy to GRPC
-	go grpc.RunHTTPServer(logger, workerConfig)
+	go grpc.RunWorkerHTTPServer(logger, workerConfig)
 
 	// start grpc server
-	grpc.RunGRPCServer(logger, reg, workerConfig)
+	grpc.RunWorkerGRPCServer(logger, reg, workerConfig)
 
 	//var f spider.Fetcher = spider.NewBrowserFetch(
 	//	spider.WithTimeout(config.GetFetcherTimeout()),

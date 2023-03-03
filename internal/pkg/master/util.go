@@ -2,10 +2,11 @@ package master
 
 import (
 	"github.com/pkg/errors"
-	"go-micro.dev/v4/registry"
 	"net"
 	"reflect"
 )
+
+var WorkerServiceName string = "go.micro.server.worker"
 
 // 获取本机网卡IP
 func getLocalIP() (string, error) {
@@ -29,13 +30,13 @@ func getLocalIP() (string, error) {
 	return "", errors.New("no local ip")
 }
 
-func workNodeDiff(old map[string]*registry.Node, new map[string]*registry.Node) ([]string, []string, []string) {
+func workNodeDiff(old map[string]*NodeSpec, new map[string]*NodeSpec) ([]string, []string, []string) {
 	added := make([]string, 0)
 	deleted := make([]string, 0)
 	changed := make([]string, 0)
 	for k, v := range new {
 		if ov, ok := old[k]; ok {
-			if !reflect.DeepEqual(v, ov) {
+			if !reflect.DeepEqual(v.Node, ov.Node) {
 				changed = append(changed, k)
 			}
 		} else {

@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-func RunGRPCServer(logger *zap.Logger, reg registry.Registry, cfg config.ServerConfig) {
+func RunWorkerGRPCServer(logger *zap.Logger, reg registry.Registry, cfg config.ServerConfig) {
 	service := micro.NewService(
 		micro.Server(grpc.NewServer(
 			server.Id(cfg.ID),

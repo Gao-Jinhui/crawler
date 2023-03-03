@@ -3,7 +3,7 @@ package grpc
 import (
 	"context"
 	"crawler/internal/pkg/config"
-	"crawler/internal/pkg/proto/greeter"
+	"crawler/internal/pkg/proto/crawler"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -11,7 +11,7 @@ import (
 	"net/http"
 )
 
-func RunHTTPServer(logger *zap.Logger, cfg config.ServerConfig) {
+func RunMasterHTTPServer(logger *zap.Logger, cfg config.ServerConfig) {
 	ctx := context.Background()
 	ctx, cancel := context.WithCancel(ctx)
 
@@ -22,12 +22,11 @@ func RunHTTPServer(logger *zap.Logger, cfg config.ServerConfig) {
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	}
 
-	if err := greeter.RegisterGreeterGwFromEndpoint(ctx, mux, cfg.GRPCListenAddress, opts); err != nil {
+	if err := crawler.RegisterCrawlerMasterGwFromEndpoint(ctx, mux, cfg.GRPCListenAddress, opts); err != nil {
 		logger.Fatal("Register backend grpc server endpoint failed", zap.Error(err))
 	}
 	zap.S().Infof("start http server listening on %v proxy to grpc server;%v", cfg.HTTPListenAddress, cfg.GRPCListenAddress)
 	if err := http.ListenAndServe(cfg.HTTPListenAddress, mux); err != nil {
 		logger.Fatal("http listenAndServe failed", zap.Error(err))
 	}
-
 }
