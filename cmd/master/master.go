@@ -31,7 +31,6 @@ func init() {
 		&masterID, "id", "1", "set master id")
 	MasterCmd.Flags().StringVar(
 		&HTTPListenAddress, "http", ":8081", "set master HTTP listen address")
-
 	MasterCmd.Flags().StringVar(
 		&GRPCListenAddress, "grpc", ":9091", "set master GRPC listen address")
 }
@@ -46,7 +45,7 @@ func Run() {
 	reg := etcd.NewRegistry(registry.Addrs(masterConfig.RegistryAddress))
 	taskConfigs := config.GetTaskConfigs()
 	seeds := spider.ParseTaskConfigs(logger, nil, nil, taskConfigs)
-	master.New(
+	m, err := master.New(
 		masterID,
 		master.WithLogger(logger.Named("master")),
 		master.WithGRPCAddress(GRPCListenAddress),
@@ -54,10 +53,13 @@ func Run() {
 		master.WithRegistry(reg),
 		master.WithSeeds(seeds),
 	)
+	if err != nil {
+		logger.Error("init master error", zap.Error(err))
+	}
 	// start http proxy to GRPC
-	go grpc.RunHTTPServer(logger, masterConfig)
+	go grpc.RunMasterHTTPServer(logger, masterConfig)
 
 	// start grpc server
-	grpc.RunGRPCServer(logger, reg, masterConfig)
+	grpc.RunMasterGRPCServer(m, logger, reg, masterConfig)
 
 }
