@@ -9,12 +9,12 @@ type ResourceSpec struct {
 	CreationTime int64
 }
 
-func encode(s *ResourceSpec) string {
+func Encode(s *ResourceSpec) string {
 	b, _ := json.Marshal(s)
 	return string(b)
 }
 
-func decode(ds []byte) (*ResourceSpec, error) {
+func Decode(ds []byte) (*ResourceSpec, error) {
 	var s *ResourceSpec
 	err := json.Unmarshal(ds, &s)
 	return s, err

@@ -28,7 +28,7 @@ func ParseTag(ctx *spider.Context) (spider.ParseResult, error) {
 	}
 	zap.S().Debugln("parse book tag,count:", len(res.Requests))
 	// 在添加limit之前，临时减少抓取数量,防止被服务器封禁
-	res.Requests = res.Requests[:5]
+	//res.Requests = res.Requests[:5]
 	return res, nil
 }
 
@@ -51,7 +51,7 @@ func ParseBookList(ctx *spider.Context) (spider.ParseResult, error) {
 		res.Requests = append(res.Requests, req)
 	}
 	// 在添加limit之前，临时减少抓取数量,防止被服务器封禁
-	res.Requests = res.Requests[:5]
+	//res.Requests = res.Requests[:5]
 
 	return res, nil
 }
