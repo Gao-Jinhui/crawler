@@ -1,8 +1,12 @@
 package worker
 
 import (
+	"crawler/internal/pkg/collector"
 	"crawler/internal/pkg/config"
+	"crawler/internal/pkg/engine"
 	"crawler/internal/pkg/grpc"
+	"crawler/internal/pkg/spider"
+	"crawler/internal/pkg/store/mysql"
 	"crawler/pkg/log"
 	"github.com/go-micro/plugins/v4/registry/etcd"
 	"github.com/spf13/cobra"
@@ -21,7 +25,7 @@ var WorkerCmd = &cobra.Command{
 		Run()
 	},
 }
-
+var cluster bool
 var workerID string
 var HTTPListenAddress string
 var GRPCListenAddress string
@@ -33,6 +37,8 @@ func init() {
 		&HTTPListenAddress, "http", ":8071", "set worker HTTP listen address")
 	WorkerCmd.Flags().StringVar(
 		&GRPCListenAddress, "grpc", ":9081", "set worker GRPC listen address")
+	WorkerCmd.Flags().BoolVar(
+		&cluster, "cluster", true, "run mode")
 }
 
 func Run() {
@@ -52,28 +58,34 @@ func Run() {
 	logger.Sugar().Infof("grpc server config,%+v", workerConfig)
 	reg := etcd.NewRegistry(registry.Addrs(workerConfig.RegistryAddress))
 
+	var f spider.Fetcher = spider.NewBrowserFetch(
+		spider.WithTimeout(config.GetFetcherTimeout()),
+		//collect.WithProxy(p),
+	)
+
+	var storage collector.Storage = mysql.NewSqlClient(config.GetMysqlConfig(), mysql.WithLogger(logger))
+	if storage == nil {
+		return
+	}
+
+	taskConfigs := config.GetTaskConfigs()
+	seeds := spider.ParseTaskConfigs(logger, f, storage, taskConfigs)
+	c, err := engine.NewCrawler(
+		engine.WithFetcher(f),
+		engine.WithLogger(logger),
+		engine.WithWorkCount(5),
+		engine.WithSeeds(seeds),
+		engine.WithregistryURL(workerConfig.RegistryAddress),
+		engine.WithScheduler(engine.NewSchedule()),
+		engine.WithStorage(storage),
+	)
+	if err != nil {
+		logger.Fatal("failed to init crawler", zap.Error(err))
+	}
+	id := workerConfig.Name + "-" + workerID
+	go c.Run(id, cluster)
 	// start http proxy to GRPC
 	go grpc.RunWorkerHTTPServer(logger, workerConfig)
-
 	// start grpc server
 	grpc.RunWorkerGRPCServer(logger, reg, workerConfig)
-
-	//var f spider.Fetcher = spider.NewBrowserFetch(
-	//	spider.WithTimeout(config.GetFetcherTimeout()),
-	//	//collect.WithProxy(p),
-	//)
-	//
-	//var storage collector.Storage = mysql.NewSqlClient(config.GetMysqlConfig(), mysql.WithLogger(logger))
-	//if storage == nil {
-	//	return
-	//}
-
-	//c := engine.NewCrawler(
-	//	engine.WithFetcher(f),
-	//	engine.WithLogger(logger),
-	//	engine.WithWorkCount(5),
-	//	engine.WithSeeds(seeds),
-	//	engine.WithScheduler(engine.NewSchedule()),
-	//)
-	//c.Run()
 }

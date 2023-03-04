@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"crawler/internal/pkg/collector"
 	"crawler/internal/pkg/spider"
 	"go.uber.org/zap"
 )
@@ -8,11 +9,13 @@ import (
 type Option func(opts *options)
 
 type options struct {
-	WorkCount int
-	Fetcher   spider.Fetcher
-	Logger    *zap.Logger
-	TaskSeeds []*spider.Task
-	scheduler Scheduler
+	WorkCount   int
+	Fetcher     spider.Fetcher
+	Storage     collector.Storage
+	Logger      *zap.Logger
+	TaskSeeds   []*spider.Task
+	registryURL string
+	scheduler   Scheduler
 }
 
 var defaultOptions = options{
@@ -45,5 +48,17 @@ func WithSeeds(seed []*spider.Task) Option {
 func WithScheduler(scheduler Scheduler) Option {
 	return func(opts *options) {
 		opts.scheduler = scheduler
+	}
+}
+
+func WithStorage(s collector.Storage) Option {
+	return func(opts *options) {
+		opts.Storage = s
+	}
+}
+
+func WithregistryURL(registryURL string) Option {
+	return func(opts *options) {
+		opts.registryURL = registryURL
 	}
 }
